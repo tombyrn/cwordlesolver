@@ -2,7 +2,7 @@
 
 1. Clone the repository
     ```
-    git clone 
+    git clone https://github.com/tombyrn/cwordlesolver.git
     ```
 
 2. Compile the C program
