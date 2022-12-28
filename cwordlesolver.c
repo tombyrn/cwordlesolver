@@ -33,9 +33,11 @@ struct word {
     int possible;
 };
 
+
 // define array of words, which will contain all five letter words read from 'wordlist.csv'
 struct word word_list[LIST_LEN];
 const int STRUCT_LEN = sizeof(word_list)/sizeof(word_list[0]);
+
 
 // prints all words in struct that are still possible
 void print_possible_words(){
@@ -62,6 +64,7 @@ void print_possible_words(){
     printf("\n"ANSI_COLOR_RESET);
 
 }
+
 
 /*
 
@@ -109,31 +112,31 @@ void filter_words_grey(char c, int index){
     }
 }
 
+
 void filter_words_yellow(char c, int index){
     // iterate through struct of words
     for(int i = 0; i < STRUCT_LEN; i++){
         char* word = word_list[i].name;
 
-        // if the character is at the given index, set the possibility of the word to false
         if(word_list[i].possible == 1){
             int count = 0;
 
+            // count the amount of times char c appears in the current word
             for(int j = 0; j < WORD_LEN; j++){
                 if(word[j] == c){
                     count++;
                 }
             }
 
-            // printf("%d\t%d\t%d\n", wi, ci, cc);
+            // if the character only appears at the given index, or not at all; set the possibility of the word to false
             if((count == 0) || (count == 1 && word[index] == c)){
-                // printf("%s is not possible\n", word);
-                // printf("%d\t%d\t%c\t%c\n\n\n", count, index, c, word[index]);
                 word_list[i].possible = 0;
             }
         }
 
     }
 }
+
 
 void filter_words_green(char c, int index){
     // iterate through struct of words
@@ -147,7 +150,9 @@ void filter_words_green(char c, int index){
     }
 }
 
-void parse_input(char* str, void (*func) (char, int));
+
+int parse_input(char* str, void (*func) (char, int));
+
 
 int main(int argc, char* argv[]) {
 
@@ -179,6 +184,8 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    fclose(wordlist);
+
     printf(ANSI_COLOR_GREEN "WORDLESOLVER"  ANSI_COLOR_RESET"\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
     printf("\tEnter answers in letter index format\t(ex. 'a1 d2 e5')\n\t"
             "If there are no new letters for the given entry just hit enter\n"
@@ -186,28 +193,51 @@ int main(int argc, char* argv[]) {
 
     int solved = 0;
 
-    // continously query user until they specify that the solution was found
+    // query user for new grey, yello, and green characters until they specify that the solution was found
     while(!solved){
-        // create four input buffers for every iteration of while loop
-        char green_str[INPUT_LEN] = {0}, yellow_str[INPUT_LEN] = {0}, grey_str[INPUT_LEN] = {0}, yn_str[INPUT_LEN] = {0};
 
-        printf("Enter " ANSI_COLOR_GREY "grey" ANSI_COLOR_RESET " letters: ");
-        fgets(grey_str, INPUT_LEN, stdin);
-        parse_input(grey_str, &filter_words_grey);
+        int status_code = 1;
+ 
+        while(status_code != 0){
+            char grey_str[INPUT_LEN] = {0};
+            // take and parse input for new grey letters
+            printf("Enter " ANSI_COLOR_GREY "grey" ANSI_COLOR_RESET " letters: "  ANSI_COLOR_GREY);
+            fgets(grey_str, INPUT_LEN, stdin);
+            status_code = parse_input(grey_str, &filter_words_grey);
+        }
+        printf(ANSI_COLOR_RESET);
 
-        printf("Enter " ANSI_COLOR_YELLOW "yellow" ANSI_COLOR_RESET " letters: ");
-        fgets(yellow_str, INPUT_LEN, stdin);
-        parse_input(yellow_str, &filter_words_yellow);
+        status_code = 1;
+        while (status_code != 0)
+        {
+            char yellow_str[INPUT_LEN] = {0};
+            // take and parse input for new yellow letters
+            printf("Enter " ANSI_COLOR_YELLOW "yellow" ANSI_COLOR_RESET " letters: " ANSI_COLOR_YELLOW);
+            fgets(yellow_str, INPUT_LEN, stdin);
+            status_code = parse_input(yellow_str, &filter_words_yellow);
+        }
+        printf(ANSI_COLOR_RESET);
+        
+        status_code = 1;
+        while(status_code != 0){
+            char green_str[INPUT_LEN] = {0};
+            // take and parse input for new green letters
+            printf("Enter " ANSI_COLOR_GREEN "green " ANSI_COLOR_RESET "letters: " ANSI_COLOR_GREEN);
+            fgets(green_str, INPUT_LEN, stdin);
+            status_code = parse_input(green_str, &filter_words_green);
+        }
+        printf(ANSI_COLOR_RESET);
 
-        printf("Enter " ANSI_COLOR_GREEN "green " ANSI_COLOR_RESET "letters: ");
-        fgets(green_str, INPUT_LEN, stdin);
-        parse_input(green_str, &filter_words_green);
 
+        // print all words that are still possible
         print_possible_words();
 
+        // ask if the user has found the correct word
         while(1){
+            char yn_str[INPUT_LEN] = {0};
             printf("\n\nHas the wordle been solved?[y/n]: ");
             fgets(yn_str, INPUT_LEN, stdin);
+            // only accept responses 'y\n', 'Y\n', 'n\n', and 'N\n' as valid
             if((yn_str[0] == 'y' || yn_str[0] == 'Y') && yn_str[1] == '\n'){
                 solved = 1;
                 break;
@@ -215,6 +245,7 @@ int main(int argc, char* argv[]) {
             if((yn_str[0] == 'n' || yn_str[0] == 'N') && yn_str[1] == '\n'){
                 break;
             }
+            // the program will loop forever until a valid input is given
         }
         printf("\n\n");
     }
@@ -223,6 +254,7 @@ int main(int argc, char* argv[]) {
     return 0;
 
 }
+
 
 /*
     parse_input
@@ -235,7 +267,9 @@ int main(int argc, char* argv[]) {
                                                 pass in the address of the corresponding function
                                                     ex. &filter_words_green
         returns
-                void
+                int     -   status of function
+                             0: Success
+                            -1: Error
 
         description
                 tokenizes input string
@@ -243,21 +277,22 @@ int main(int argc, char* argv[]) {
                 filters the word list depending on the
                 filter function passed in as the second argument
 */
-void parse_input(char* str, void (*func) (char, int)){
+int parse_input(char* str, void (*func) (char, int)){
     // tokenize input string (peel off a single term ie. 'a1')
     char *token;
     token = strtok(str, " ");
 
+
     // if the string is empty there is nothing to do
-    if(strcmp(str, "\n") != 0){
+    if(strcmp(str, "\n") != 0 || str[0] == '\n'){
         
         // continue to tokenize until you hit a new line
-        while(token != NULL){
+        while(token != NULL && strcmp(token, "\n") != 0){
 
             // Error Check: length of token should be two characters long ie. 'a4', except when its a new line then it can be three ie. 'a4\n'
             if((strlen(token) != 2 && token[2] != '\n') || token[1] == '\n'){
-                fprintf(stderr, ANSI_COLOR_RED "Error: answer should be in letter index format (ex. 'a1 d2 e5')\n");
-                exit(-1);
+                printf(ANSI_COLOR_RED "Error: answer should be in letter index format (ex. 'a1 d2 e5')\n" ANSI_COLOR_RESET);
+                return -1;
             }
 
             // get the letter and index of current token
@@ -267,9 +302,9 @@ void parse_input(char* str, void (*func) (char, int)){
             // Error Check: index of the current token must be between 0-4
             if(index > 4 || index < 0){
                 fprintf(stderr, ANSI_COLOR_RED 
-                        "Error: invalid index (%c%d can't exist on the board)\n\tTry entering the string in the following format: 'a1 d2 e5'\n",
-                        letter, index);
-                exit(-1);
+                        "Error: invalid index (%c%d can't exist on the board)\n\tTry entering the string in the following format: 'a1 d2 e5'\n" ANSI_COLOR_RESET,
+                        letter, index+1);
+                return -1;
             }
 
             // call function pointer to filter remaining word list
@@ -279,5 +314,8 @@ void parse_input(char* str, void (*func) (char, int)){
             token = strtok(NULL, " "); //f irst argument NULL lets function know to to continue tokenizing the initial string
         }
 
+        return 0;
     }
+    
+    return -1;
 }
