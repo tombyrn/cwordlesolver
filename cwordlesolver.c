@@ -150,6 +150,64 @@ void filter_words_green(char c, int index){
     }
 }
 
+// frequency table of english letters according to : https://en.wikipedia.org/wiki/Letter_frequency
+double frequency[26] = {
+    7.8,    // a 
+    2.0,
+    4.0,
+    3.8,
+    11.0,
+    1.4,
+    3.0,
+    2.3,
+    8.6,
+    0.21,
+    0.97,
+    5.3,
+    2.7,
+    7.2,
+    6.1,
+    2.8,
+    0.19,
+    7.3,
+    8.7,
+    6.7,
+    3.3,
+    1.0,
+    0.91,
+    0.27,
+    1.60,
+    0.44    // z
+};
+
+char* suggest_next_word(){
+    double highestFrequency = 0;
+    char* suggested_word;
+    int repeat_chars = 0;
+    for(int i = 0; i < STRUCT_LEN; i++){
+        if(word_list[i].possible){
+            double freq = 0;
+            for(int j = 0; j < WORD_LEN; j++){
+                for(int k = 0; k < WORD_LEN; k++){
+                    if(word_list[i].name[k] == word_list[i].name[j] && j != k){
+                        repeat_chars = 1;
+                    }
+                }
+                
+                if(!repeat_chars)
+                    freq += frequency[word_list[i].name[j] - 97];
+            }
+
+            if(highestFrequency < freq){
+                highestFrequency = freq;
+                suggested_word = word_list[i].name;
+            }
+        }
+        repeat_chars = 0;
+    }
+
+    return suggested_word;
+}
 
 int parse_input(char* str, void (*func) (char, int));
 
@@ -185,11 +243,13 @@ int main(int argc, char* argv[]) {
     }
 
     fclose(wordlist);
-
-    printf(ANSI_COLOR_GREEN "WORDLESOLVER"  ANSI_COLOR_RESET"\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-    printf("\tEnter answers in letter index format\t(ex. 'a1 d2 e5')\n\t"
-            "If there are no new letters for the given entry just hit enter\n"
-            "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n");
+    printf(ANSI_COLOR_GREEN "WORDLESOLVER"  ANSI_COLOR_RESET
+    "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+    printf(
+    "\tEnter answers in letter index format\t(ex. 'a1 d2 e5')\n"
+    "\tIf there are no new letters for the given entry just hit enter\n"
+    "\tIt is suggested your first guess should be " ANSI_COLOR_CYAN"%s\n" ANSI_COLOR_RESET
+    "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n", suggest_next_word());
 
     int solved = 0;
 
@@ -231,6 +291,7 @@ int main(int argc, char* argv[]) {
 
         // print all words that are still possible
         print_possible_words();
+        printf(ANSI_COLOR_CYAN "Suggested Next Word: %s\n" ANSI_COLOR_RESET, suggest_next_word());
 
         // ask if the user has found the correct word
         while(1){
